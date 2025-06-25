@@ -1,15 +1,10 @@
 %------------------------------CRs y VTs-----------------------------------%
 
 %Creacion de CR totalItemsCreados
-            SetLabel CRATIC, Libre                                                          %Etiqueta para CR totalItemsCreados
+            SetLabel CRA, Libre                                                             %Etiqueta para CR totalItemsCreados
             SetD Libre, 0                           @totalItemsCreados=0                    %Inicializo totalItemsCreados en 0
-            SetLibre Libre+1                                                         %Actualizar Libre
-            SetActual Libre                                                                 %Actualizar Actual
-            
-%Creacion de CR limiteProcesamiento
-            SetLabel CRALP, Libre                                                           %Etiqueta para CR limiteProcesamiento
-            SetD Libre, 100                         @limiteProcesamiento=100                %Inicializo limiteProcesamiento en 100
-            SetLibre Libre+1                                                                %Actualizar Libre
+            SetD Libre+1, 100                       @limiteProcesamiento=100                %Inicializo limiteProcesamiento en 100
+            SetLibre Libre+2                                                                %Actualizar Libre
             SetActual Libre                                                                 %Actualizar Actual
 
 %Creacion de VT de la clase A
@@ -66,8 +61,8 @@ Halt
 
 %-------------------------Constructor de A---------------------------%
 constructorA SetH PO, VTA                           @VT de A                                %Asignar VT de A al objeto que se esta creando
-            SetD CRATIC, D[CRATIC]+1                @totalItemsCreados++                    %Sumar 1 en el class record de totalItemsCreados
-            SetH PO+1, D[CRATIC]*100                @itemId=totalItemsCreados*100           %Asignarle a itemId el valor de totalItemsCreados * 100
+            SetD CRA+0, D[CRA+0]+1                @totalItemsCreados++                    %Sumar 1 en el class record de totalItemsCreados
+            SetH PO+1, D[CRA+0]*100                @itemId=totalItemsCreados*100           %Asignarle a itemId el valor de totalItemsCreados * 100
             SetH PO+2, 50                           @cantidadDisponible=50                  %Asignarle a cantidadDisponible el valor de 50
             SetH PO+3, 10                           @valorUnitario=10                       %Asignarle a valorUnitario el valor de 10
             SetPO PO+4                              @Correr PO                              %Corro PO tantos lugares como la cantidad de atributos que tiene A
@@ -90,7 +85,7 @@ procesarLoteA SetD Actual+3, 0                      @itemsProcesados=0          
             loopProcesarLoteAStart 
                 JumpT finLoopProcesarLoteA, (D[Actual+4] < H[D[Actual+2]+2] & (D[Actual+5] >= 0))==0 @!(i < cantidadDisponible & stock >= 0) %Mientras i < cantidadDisponible y stock >= 0
                 SetD Actual+3, (D[Actual+3] + (D[Actual+4] - ((D[Actual + 4] / 5) * 5)) + 1) @itemsProcesados+=(i mod 5)+1        %Incrementar itemsProcesados en (i mod 5)+1. 
-                JumpT finLoopProcesarLoteA, (D[Actual+3] > D[CRALP])                          %Si itemsProcesados es mayor a limiteProcesamiento, salgo del loop           
+                JumpT finLoopProcesarLoteA, (D[Actual+3] > D[CRA+1])                          %Si itemsProcesados es mayor a limiteProcesamiento, salgo del loop           
                 SetD Actual+4, D[Actual+4]+1            @i++                                    %Incrementar i en 1   
                 Jump loopProcesarLoteAStart                                                     %Vuelvo al inicio del loop          
             finLoopProcesarLoteA 
@@ -125,16 +120,20 @@ obtenerValorUnitarioA SetD Actual-1, H[D[Actual+2]+3] @ret valorUnitario        
 %----------------------------------------------------------------------%
 
 %------------------Traduccion de verificarStockA-----------------------%
-verificarStockA JumpT segundoIfVerificarStockA, (H[D[Actual+2]+2] > 20)==0                    %Si cantidadDisponible < 20, salto al segundo if
-            JumpT segundoIfVerificarStockA, (H[D[Actual+2]+3]>5)==0                           %Si valorUnitario <= 5, salto al retorno
-            SetD Actual-1, 1                           @ret 1                            %Asignar 1 al retorno
+verificarStockA 
+            JumpT segundoIfVerificarStockA, !(H[D[Actual+2]+2] > 20)                    %Si cantidadDisponible < 20, salto al segundo if
+            JumpT segundoIfVerificarStockA, !(H[D[Actual+2]+3]>5)                          %Si valorUnitario <= 5, salto al retorno
+            SetD Actual-1, 1                           @ret 1 verificarStock                            %Asignar 1 al retorno
             Jump finVerificarStockA
+            
             segundoIfVerificarStockA 
-            JumpT retornoVerificarStockA, (H[D[Actual+2]+2] <= 20)==0                         %Si cantidadDisponible >20, salto al retorno
-            JumpT retornoVerificarStockA, (H[D[Actual+2]+2]>0)==0                             %Si cantidadDisponible <= 0, salto al retorno
-            SetD Actual-1, 0                           @ret 0                            %Asignar valorUnitario al retorno
+            JumpT retornoVerificarStockA, !(H[D[Actual+2]+2] <= 20)                         %Si cantidadDisponible >20, salto al retorno
+            JumpT retornoVerificarStockA, !(H[D[Actual+2]+2]>0)                           %Si cantidadDisponible <= 0, salto al retorno
+            SetD Actual-1, 0                           @ret 0 verificarStock                       %Asignar valorUnitario al retorno
             Jump finVerificarStockA
-            retornoVerificarStockA SetD Actual-1, -1   @ret -1 (!!!)
+            
+            retornoVerificarStockA SetD Actual-1, -1   @ret -1 verificarStock
+            
             finVerificarStockA 
             SetLibre Actual                                                                 %Limpio la memoria del RA de verificarStockA
             SetActual D[Libre+1]                                                            %Muevo Actual a donde tenia el enlace dinamico
@@ -187,22 +186,28 @@ procesarLoteB SetLibre Libre+1                                                  
             finSwitchTipoProductoB
             SetH D[Actual+2]+2, (H[D[Actual+2]+2]-(D[Actual+4]/5)) @cantidadDisponible=cantidadDisponible-(ajuste/5) %Actualizar cantidadDisponible restando ajuste/5
             SetD Actual-1, (D[Actual+3]+D[Actual+4]) @retorno procesarLoteB          %Asignar resultadoBase+ajuste al retorno
+            
             SetLibre Actual                                                                 %Limpio la memoria del RA de procesarLoteB
             SetActual D[Libre+1]                                                            %Muevo Actual a donde tenia el enlace dinamico
             Jump D[Libre]                                                                   %Salto a la direccion de codigo que guarde en el puntero de retorno
 %----------------------------------------------------------------------%
 
 %-------------------------Traduccion de manejarPedido1B----------------%
-manejarPedido1B JumpT cantidadSolicitadaSuficiente, (D[Actual+3] <=0)==0   @cantSolSuficiente                   %Si no se cumple que cantidadSolicitada <=0, salto al segundo if
+manejarPedido1B 
+            JumpT segundoIfManejarPedido1B, !(D[Actual+3] <=0)   @cantSolSuficiente                   %Si no se cumple que cantidadSolicitada <=0, salto al segundo if
             SetD Actual-1, 0                           @retorno manejarPedido1B                            %Asignar 0 al retorno porque la cantidad solicitada es menor o igual a 0
-            Jump finManejarPedido1B                           
-            cantidadSolicitadaSuficiente 
-            JumpT cantidadSolicitadaMayor, (D[Actual+3] <= H[D[Actual+2]+2])==0               %Si cantidadSolicitada <= cantidadDisponible, salto al retorno
-            SetH D[Actual+2]+2, (H[D[Actual+2]]-D[Actual+3])               @cantidadDisponible-=cantidadSolicitada %Decrementar cantidadDisponible en cantidadSolicitada
-            SetD Actual-1, (D[Actual+3]*H[D[Actual+2]+3])        @retorno manejarPedido1B  %Asignar cantidadSolicitada*valorUnitario al retorno
             Jump finManejarPedido1B
+
+            segundoIfManejarPedido1B 
+            JumpT cantidadSolicitadaMayor, !(D[Actual+3] <= H[D[Actual+2]+2])               %Si cantidadSolicitada <= cantidadDisponible, salto al retorno
+            %Hay stock disponible
+            SetH D[Actual+2]+2, (H[D[Actual+2]+2] - D[Actual+3])               @cantidadDisponible-=cantidadSolicitada %Decrementar cantidadDisponible en cantidadSolicitada
+            SetD Actual-1, (D[Actual+3] * H[D[Actual+2]+3])        @retorno manejarPedido1B  %Asignar cantidadSolicitada*valorUnitario al retorno
+            Jump finManejarPedido1B
+
             cantidadSolicitadaMayor 
-            SetD Actual-1, -1   @retorno manejarPedido1B                                                  %Asignar -1 al retorno
+            SetD Actual-1, -1   @retorno manejarPedido1B (!!!)                                                  %Asignar -1 al retorno
+            
             finManejarPedido1B 
             SetLibre Actual                                                                 %Limpio la memoria del RA de manejarPedido1B
             SetActual D[Libre+1]                                                            %Muevo Actual a donde tenia el enlace
@@ -216,14 +221,19 @@ manejarPedido2B SetLibre Libre+1                                                
             SetD Libre+2, D[Actual+2]               @This de manejarPedido1B                %Asigno el this para la llamada a manejarPedido1B
             SetD Libre+3, D[Actual+3]               @param cantidadSolicitada               %Paso por parametro cantidadSolicitada
             SetActual Libre
-            SetLibre Actual+4                                                               %Asigno Libre segun el tamaño del RA de procesarLoteA
+            SetLibre Actual+5                                                               %Asigno Libre segun el tamaño del RA de procesarLoteA
             Jump manejarPedido1B                                                            %Salto a manejarPedido1B
             SetD Actual+5, D[Libre-1]               @costo=manejarPedido1B(cantidadSolicitada) %Asigno el valor de retorno de manejarPedido1B(cantidadSolicitada) a costo
-            JumpT retornoManejarPedido2B, (D[Actual+5]>0)==0
-            JumpT retornoManejarPedido2B, (D[Actual+4]>5)==0                                  %Si costo > 0 y prioridad > 5, salto al retorno
+            
+            JumpT retornoManejarPedido2B, !(D[Actual+5]>0)
+            JumpT retornoManejarPedido2B, !(D[Actual+4]>5)                                  %Si costo > 0 y prioridad > 5, salto al retorno
+
             SetD Actual-1, (D[Actual+5]+(D[Actual+5]/10)) @retorno manejarPedido2B costo+(costo/10)            %Asignar costo+(costo/10) al retorno
             Jump finManejarPedido2B
-            retornoManejarPedido2B SetD Actual-1, D[Actual+5] @retorno manejarPedido2B costo                 %Asignar costo al retorno
+            
+            retornoManejarPedido2B 
+            SetD Actual-1, D[Actual+5] @retorno manejarPedido2B costo                 %Asignar costo al retorno
+            
             finManejarPedido2B
             SetLibre Actual                                                                 %Limpio la memoria del RA de manejarPedido2B
             SetActual D[Libre+1]                                                            %Muevo Actual a donde tenia el enlace dinamico
@@ -232,7 +242,7 @@ manejarPedido2B SetLibre Libre+1                                                
 
 %-------------------------Traduccion de obtenerInformacionB-------------%
 obtenerInformacionB 
-            JumpT tipoInfoDistintoUno, (D[Actual+3]==1)==0 @tipoInfo==1 %Si tipoInfo es 1, salto al retorno dentro del if
+            JumpT tipoInfoDistintoUno, !(D[Actual+3]==1) @tipoInfo==1 %Si tipoInfo es 1, salto al retorno dentro del if
             SetLibre Libre+1                                                               %Dejo un espacio para el valor de retorno de obtenerInformacionA()
             SetD Libre, PC+7                        @PTR de obtenerInformacionA             %Asigno el puntero de retorno para la llamada a obtenerInformacionA()
             SetD Libre+1, Actual                    @ED de obtenerInformacionA              %Asigno el enlace dinamico para la llamada a obtenerInformacionA
@@ -243,8 +253,10 @@ obtenerInformacionB
             Jump obtenerInformacionA                                                        %Salto a obtenerInformacionA
             SetD Actual-1, (D[Libre-1]+H[D[Actual+2]+4]) @retorno obtenerInformacionB obtenerInformacionA()+ubicacionAlmacen %Asignar obtenerInformacionA()+ubicacionAlmacen al retorno
             Jump finObtenerInformacionB
+            
             tipoInfoDistintoUno
             SetD Actual-1, (H[D[Actual+2]+5] * H[D[Actual+2]+3] + D[Actual+3]) @retorno obtenerInformacionB tipoProducto*valorUnitario+tipoInfo %Asignar tipoProducto*valorUnitario+tipoInfo al retorno
+            
             finObtenerInformacionB
             SetLibre Actual                                                                 %Limpio la memoria del RA de obtenerInformacionB
             SetActual D[Libre+1]                                                            %Muevo Actual a donde tenia el enlace dinamico
@@ -291,7 +303,6 @@ constructorC
 %----------------------------------------------------------------------%
 
 %-------------Traduccion de inicializarProductoPrincipalC--------------%
-            %Creo un producto de clase B y lo asigno a PO+6
 inicializarProductoPrincipalC 
             SetD Actual+2, PO                       @This=PO                                %Asigno el this al objeto que voy a crear
             SetH D[Actual+2]+6, PO                  @productoPrincipal=PO+6                %Asigno el productoPrincipal al espacio de memoria PO+6              
@@ -321,9 +332,11 @@ cumplirOrdenComplejaC
             Jump manejarPedido1B                                                            %Salto a manejarPedido1B
             SetD Actual+7, D[Libre-1]              @procesadoAhora=manejarPedido1B(itemsFaltantes/2) %Asigno el valor de retorno de manejarPedido1B(itemsFaltantes/2) a procesadoAhora
             SetLibre Libre-1                                                                %Limpio el espacio que deje para manejarPedido1B
+            JumpT segundaLlamadaManejarPedido, D[Actual+7] == -1                            %Si procesadoAhora == -1, salto al primer if
+            JumpT procesadoAhoraPositivo, D[Actual+7] > 0                                   %Si procesadoAhora > 0, salto al segundo if
+            Jump elseProcesadoAhoraPositivo                                             %Si procesadoAhora == 0, salto al else
 
-        procesadoAhoraIgualAMenosUno
-            JumpT procesadoAhoraPositivo, (D[Actual+7]==(-1))==0                            %Si procesadoAhora <= 0, salto al segundo if
+        segundaLlamadaManejarPedido
             SetLibre Libre+1                                                                %Dejo un espacio para llamar a manejarPedido1B de productoPrincipal (objeto de tipo B)
             SetD Libre, PC+7                       @PTR de manejarPedido1B                  %Asigno el puntero de retorno para la llamada a manejarPedido1B()
             SetD Libre+1, Actual                   @ED de manejarPedido1B                   %Asigno el enlace dinamico para la llamada a manejarPedido1B
@@ -334,9 +347,11 @@ cumplirOrdenComplejaC
             Jump manejarPedido1B                                                            %Salto a manejarPedido1B
             SetD Actual+7, D[Libre-1]              @procesadoAhora=manejarPedido1B(itemsFaltantes) %Asigno el valor de retorno de manejarPedido1B(itemsFaltantes) a procesadoAhora
             SetLibre Libre-1                                                                %Limpio el espacio que deje para manejarPedido1B
-            
+    
+            JumpT procesadoAhoraPositivo, (D[Actual+7]>0)                                   %Si procesadoAhora > 0, salto al tercer if
+            Jump elseProcesadoAhoraPositivo                                                 %Si procesadoAhora == 0, salto al else
+
         procesadoAhoraPositivo
-            JumpT elseProcesadoAhoraPositivo, (D[Actual+7]>0)==0                               %Si procesadoAhora <= 0, salto al else del segundo if
             SetD Actual+6, (D[Actual+6]+D[Actual+7]) @costo+=procesadoAhora                   %Incrementar costo en procesadoAhora
             SetLibre Libre+1                                                                %Dejo un espacio para llamar a obtenerValorUnitarioB de productoPrincipal (objeto de tipo B)
             SetD Libre, PC+6                       @PTR de obtenerValorUnitarioB            %Asigno el puntero de retorno para la llamada a obtenerValorUnitarioB()
@@ -347,6 +362,7 @@ cumplirOrdenComplejaC
             Jump obtenerValorUnitarioB                                                      %Salto a obtenerValorUnitarioB
             SetD Actual+4, (D[Actual+4]-(D[Actual+7]/D[Libre-1])) @itemsFaltantes-=procesadoAhora/valorUnitario %Actualizar itemsFaltantes restando procesadoAhora/valorUnitario
             SetLibre Libre-1                                                                %Limpio el espacio que deje para obtenerValorUnitarioB
+            
             Jump sumarunProcesadoAhora
             
         elseProcesadoAhoraPositivo
@@ -355,15 +371,15 @@ cumplirOrdenComplejaC
         sumarunProcesadoAhora
             SetD Actual+5, D[Actual+5]+1           @vecesProcesados++                       %Incrementar vecesProcesados en 1
             
-        JumpT finDoWhileCumplirOrdenComplejaC, (D[Actual+4]>0)==0                             %Si itemsFaltantes <= 0, salto al fin del do-while
+        JumpT finDoWhileCumplirOrdenComplejaC, !(D[Actual+4]>0)                             %Si itemsFaltantes <= 0, salto al fin del do-while
         JumpT inicioDoWhileCumplirOrdenComplejaC, (D[Actual+5]<5)                           %Si itemsFaltantes > 0 y vecesProcesados < 5, vuelvo al inicio del do-while
 
         finDoWhileCumplirOrdenComplejaC
-            JumpT retornoPositivoCumplirOrdenComplejaC, (D[Actual+4]>0)==0                    %Si itemsFaltantes <= 0, salto al retorno positivo
+            JumpT retornoCostoTotalCumplirOrdenComplejaC, !(D[Actual+4]>0)                    %Si itemsFaltantes <= 0, salto al retorno positivo
             SetD Actual-1, D[Actual+6]*(-1)        @retorno -costoTotal                      %Asignar -costo al retorno
             Jump finCumplirOrdenComplejaC
             
-        retornoPositivoCumplirOrdenComplejaC
+        retornoCostoTotalCumplirOrdenComplejaC
             SetD Actual-1, D[Actual+6]             @retorno costoTotal                       %Asignar costo al retorno
             
         finCumplirOrdenComplejaC
