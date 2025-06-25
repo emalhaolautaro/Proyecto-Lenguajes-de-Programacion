@@ -156,7 +156,7 @@ constructorB
             SetPO PO-4                 @Corro PO por 4 lugares                             %Correr PO por 4 lugares para ir al comienzo de los atributos de B
             SetH PO, VTB               @VTB                                                %Salto al constructor de A segun la VT del objeto que se acaba de crear
             SetH PO+4, 1000+H[PO+1] @ubicacionAlmacen = 1000+itemId                %Asignar ubicacionAlmacen a 1000 + itemId
-            SetH PO+5, (H[PO+2] - ((H[PO+2] / 2) * 2)) + 1 @tipoProducto = (itemId/2)+1    %Asignar tipoProducto a (itemId/2)+1
+            SetH PO+5, (H[PO+2] - ((H[PO+2] / 2) * 2)) + 1 @tipoProducto = (itemId mod 2)+1    %Asignar tipoProducto a (itemId/2)+1
             SetPO PO+6                 @Corro PO al siguiente espacio libre
             SetLibre Actual                                                                 %Limpio la memoria del RA de obtenerInformacionA
             SetActual D[Libre+1]                                                            %Muevo Actual a donde tenia el enlace dinamico
@@ -305,7 +305,6 @@ constructorC
 
 %-------------Traduccion de inicializarProductoPrincipalC--------------%
 inicializarProductoPrincipalC 
-            SetD Actual+2, PO                       @This=PO                                %Asigno el this al objeto que voy a crear
             SetH D[Actual+2]+6, PO                  @productoPrincipal=PO+6                %Asigno el productoPrincipal al espacio de memoria PO+6              
             SetD Libre, PC+5                        @PTR de constructorB                    %Asigno el puntero de retorno para la llamada a constructorB()
             SetD Libre+1, Actual                    @ED de constructorB                     %Asigno el enlace dinamico para la llamada a constructorB
@@ -329,7 +328,7 @@ cumplirOrdenComplejaC
             SetD Libre+2, H[D[Actual+2]+6]         @This de manejarPedido1B = productoPrincipal %Asigno el this para la llamada a manejarPedido1B
             SetD Libre+3, D[Actual+4]/2            @param cantidadSolicitada = itemsFaltantes/2 %Paso por parametro itemsFaltantes/2
             SetActual Libre                                                                 %Muevo Actual para que apunte al RA que acabo de crear para manejarPedido1B
-            SetLibre Actual+5                                                               %Muevo Libre segun el tamaño del RA de manejarPedido1B
+            SetLibre Actual+4                                                               %Muevo Libre segun el tamaño del RA de manejarPedido1B
             Jump manejarPedido1B                                                            %Salto a manejarPedido1B
             SetD Actual+7, D[Libre-1]              @procesadoAhora=manejarPedido1B(itemsFaltantes/2) %Asigno el valor de retorno de manejarPedido1B(itemsFaltantes/2) a procesadoAhora
             SetLibre Libre-1                                                                %Limpio el espacio que deje para manejarPedido1B
@@ -342,7 +341,7 @@ cumplirOrdenComplejaC
             SetD Libre+2, H[D[Actual+2]+6]         @This de manejarPedido1B = productoPrincipal %Asigno el this para la llamada a manejarPedido1B
             SetD Libre+3, D[Actual+4]              @param cantidadSolicitada = itemsFaltantes %Paso por parametro itemsFaltantes
             SetActual Libre                                                                 %Muevo Actual para que apunte al RA que acabo de crear para manejarPedido1B
-            SetLibre Actual+5                                                               %Muevo Libre segun el tamaño del RA de manejarPedido1B
+            SetLibre Actual+4                                                               %Muevo Libre segun el tamaño del RA de manejarPedido1B
             Jump manejarPedido1B                                                            %Salto a manejarPedido1B
             SetD Actual+7, D[Libre-1]              @procesadoAhora=manejarPedido1B(itemsFaltantes) %Asigno el valor de retorno de manejarPedido1B(itemsFaltantes) a procesadoAhora
             SetLibre Libre-1                                                                %Limpio el espacio que deje para manejarPedido1B
